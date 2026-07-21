@@ -1,0 +1,96 @@
+// Spike schema — SQLite locally; swap provider to postgresql for production Neon/Postgres.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model User {
+  id            String         @id @default(cuid())
+  privyId       String         @unique
+  walletAddress String?
+  referralCode  String         @unique
+  referredById  String?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  hedges        Hedge[]
+  positions     Position[]
+  pnlSnapshots  PnLSnapshot[]
+  notifications Notification[]
+  referralsMade Referral[]     @relation("Referrer")
+  referredAs    Referral?      @relation("Referee")
+}
+
+model Hedge {
+  id           String     @id @default(cuid())
+  userId       String
+  user         User       @relation(fields: [userId], references: [id])
+  intent       String
+  parsedIntent String
+  provider     String
+  marketId     String
+  marketTitle  String
+  side         String
+  stakeUsd     Float
+  status       String     @default("open")
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+  positions    Position[]
+  pnlSnapshots PnLSnapshot[]
+}
+
+model Position {
+  id           String   @id @default(cuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id])
+  hedgeId      String
+  hedge        Hedge    @relation(fields: [hedgeId], references: [id])
+  provider     String
+  externalId   String?
+  marketId     String
+  side         String
+  size         Float
+  entryPrice   Float
+  currentPrice Float
+  unrealizedPnL Float   @default(0)
+  realizedPnL  Float    @default(0)
+  status       String   @default("open")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model PnLSnapshot {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  hedgeId   String?
+  hedge     Hedge?   @relation(fields: [hedgeId], references: [id])
+  totalPnL  Float
+  payload   String
+  createdAt DateTime @default(now())
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  type      String
+  title     String
+  body      String
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+
+model Referral {
+  id         String   @id @default(cuid())
+  referrerId String
+  referrer   User     @relation("Referrer", fields: [referrerId], references: [id])
+  refereeId  String   @unique
+  referee    User     @relation("Referee", fields: [refereeId], references: [id])
+  code       String
+  createdAt  DateTime @default(now())
+}
