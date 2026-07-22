@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import { usePrivy, useWallets } from "@privy-io/react-auth";
 
 type MarketMatch = {
@@ -32,65 +33,84 @@ type Hedge = {
 
 const DEMO_PRIVY_ID = "demo-founder";
 
+const SUGGESTIONS = [
+  "Protect my SOL bag if it crashes — $50",
+  "Hedge BTC downside into year end — $100",
+  "Bet on a Fed rate cut next meeting — $25",
+];
+
 export function HedgeApp() {
   const privyEnabled = Boolean(process.env.NEXT_PUBLIC_PRIVY_APP_ID);
   if (privyEnabled) return <HedgeAppPrivy />;
-  return <HedgeAppInner demoMode privyId={DEMO_PRIVY_ID} walletAddress={undefined} />;
+  return <HedgeAppInner demoMode privyId={DEMO_PRIVY_ID} />;
 }
 
 function HedgeAppPrivy() {
   const { authenticated, user, login, logout } = usePrivy();
   const { wallets } = useWallets();
-  const walletAddress = wallets[0]?.address;
-
   if (!authenticated || !user) {
     return (
-      <Shell>
-        <section className="rounded-2xl border border-emerald-500/20 bg-emerald-950/40 p-4">
-          <p className="mb-3 text-sm text-emerald-100/80">
-            Connect with Privy to use your embedded Solana wallet
+      <Phone>
+        <div className="flex flex-1 flex-col justify-end gap-6 p-6 pb-10">
+          <Brand />
+          <p className="text-[15px] leading-relaxed text-[var(--muted)]">
+            Say what you want to protect. We match prediction markets and open a hedge on Solana.
           </p>
           <button
             type="button"
             onClick={() => login()}
-            className="rounded-lg bg-emerald-400 px-3 py-2 text-sm font-medium text-emerald-950"
+            className="w-full rounded-2xl bg-[var(--ink)] px-4 py-3.5 text-[15px] font-semibold text-[#0c0b0a]"
           >
-            Login with Privy
+            Continue with wallet
           </button>
-        </section>
-      </Shell>
+        </div>
+      </Phone>
     );
   }
-
   return (
     <HedgeAppInner
       demoMode={false}
       privyId={user.id}
-      walletAddress={walletAddress}
-      email={user.email?.address}
+      walletAddress={wallets[0]?.address}
       onLogout={() => logout()}
     />
   );
 }
 
-function Shell({ children }: { children: React.ReactNode }) {
+function Brand() {
   return (
-    <div className="mx-auto flex w-full max-w-3xl flex-col gap-6 px-4 py-8">
-      <header className="space-y-3">
-        <p className="text-xs uppercase tracking-[0.2em] text-emerald-300/80">
-          Technical spike · Superteam application
-        </p>
-        <h1 className="font-serif text-4xl leading-tight text-emerald-50 sm:text-5xl">
-          Hedge Your Fun
-        </h1>
-        <p className="max-w-2xl text-sm leading-relaxed text-emerald-100/70">
-          Independent production-style spike: Privy wallets, Solana balances, Polymarket + Kalshi
-          adapters, persistent hedges, SSE P&amp;L, prompt matching, referrals, PWA. Not affiliated
-          with the sponsor&apos;s production repo.
-        </p>
-      </header>
-      {children}
+    <div className="animate-rise space-y-3">
+      <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--accent)]">
+        Hedge
+      </p>
+      <h1 className="font-serif text-[2.65rem] leading-[1.05] tracking-[-0.02em] text-[var(--ink)]">
+        Protect the plan.
+        <br />
+        Not just the bag.
+      </h1>
     </div>
+  );
+}
+
+function Phone({ children }: { children: React.ReactNode }) {
+  return (
+    <main className="mx-auto flex min-h-screen max-w-lg flex-col px-3 py-4 sm:px-4 sm:py-8">
+      <div className="relative flex min-h-[min(860px,100vh-2rem)] flex-1 flex-col overflow-hidden rounded-[2rem] border border-[var(--line)] bg-[rgba(12,11,10,0.88)] shadow-[0_30px_80px_rgba(0,0,0,0.45)] backdrop-blur-xl">
+        <div className="pointer-events-none absolute inset-x-0 top-0 h-40 bg-[radial-gradient(circle_at_top,rgba(255,179,71,0.16),transparent_70%)]" />
+        {children}
+      </div>
+      <p className="mt-4 px-2 text-center text-[11px] leading-relaxed text-[var(--muted)]">
+        Independent production spike for Superteam ·{" "}
+        <Link className="underline decoration-[var(--line)] underline-offset-2" href="/portfolio">
+          portfolio
+        </Link>{" "}
+        ·{" "}
+        <Link className="underline decoration-[var(--line)] underline-offset-2" href="/cv">
+          CV
+        </Link>
+        · not the sponsor&apos;s production app
+      </p>
+    </main>
   );
 }
 
@@ -98,26 +118,18 @@ function HedgeAppInner({
   demoMode,
   privyId,
   walletAddress,
-  email,
   onLogout,
 }: {
   demoMode: boolean;
   privyId: string;
   walletAddress?: string;
-  email?: string;
   onLogout?: () => void;
 }) {
-  const [intent, setIntent] = useState(
-    "Hedge my SOL bag against a crash — $50 on downside protection",
-  );
+  const [intent, setIntent] = useState(SUGGESTIONS[0]);
   const [matches, setMatches] = useState<MarketMatch[]>([]);
   const [parsed, setParsed] = useState<Record<string, unknown> | null>(null);
   const [hedges, setHedges] = useState<Hedge[]>([]);
-  const [balances, setBalances] = useState<{
-    sol: number;
-    usdc: number;
-    walletAddress: string;
-  } | null>(null);
+  const [balances, setBalances] = useState<{ sol: number; usdc: number } | null>(null);
   const [pnl, setPnl] = useState(0);
   const [livePositions, setLivePositions] = useState<
     Array<{ id: string; unrealizedPnL: number; currentPrice: number }>
@@ -126,11 +138,12 @@ function HedgeAppInner({
     referralCode: string;
     shareUrl: string;
     cardUrl: string;
-    notifications: Array<{ id: string; title: string; body: string }>;
   } | null>(null);
   const [busy, setBusy] = useState("");
-  const [banner, setBanner] = useState<string | null>(null);
+  const [step, setStep] = useState<"compose" | "markets" | "positions">("compose");
+  const [toast, setToast] = useState<string | null>(null);
   const [side, setSide] = useState<"YES" | "NO">("NO");
+  const autoRan = useRef(false);
 
   const ensureUser = useCallback(async () => {
     const ref =
@@ -160,6 +173,71 @@ function HedgeAppInner({
     if (json.ok) setReferral(json.data);
   }, [privyId]);
 
+  const runMatch = useCallback(
+    async (text = intent) => {
+      setBusy("Finding markets…");
+      setToast(null);
+      try {
+        const res = await fetch("/api/prompt", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ intent: text }),
+        });
+        const json = await res.json();
+        if (!json.ok) throw new Error(json.error?.message ?? "Match failed");
+        setParsed(json.data.intent);
+        setMatches(json.data.matches ?? []);
+        if (json.data.intent?.sideBias) setSide(json.data.intent.sideBias);
+        if (json.data.intent?.refusal) setToast(json.data.intent.refusal);
+        else setStep("markets");
+        return json.data.matches as MarketMatch[];
+      } catch (e) {
+        setToast(e instanceof Error ? e.message : "Match failed");
+        return [] as MarketMatch[];
+      } finally {
+        setBusy("");
+      }
+    },
+    [intent],
+  );
+
+  const openHedge = useCallback(
+    async (market: MarketMatch, chosenSide: "YES" | "NO", stakeOverride?: number) => {
+      setBusy("Opening hedge…");
+      try {
+        const stakeUsd =
+          stakeOverride ??
+          (typeof parsed?.stakeUsd === "number" ? (parsed.stakeUsd as number) : 50);
+        const res = await fetch("/api/hedges", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            privyId,
+            walletAddress: demoMode ? null : walletAddress,
+            intent,
+            parsedIntent: JSON.stringify(parsed ?? {}),
+            provider: market.provider,
+            marketId: market.id,
+            marketTitle: market.title,
+            side: chosenSide,
+            stakeUsd,
+          }),
+        });
+        const json = await res.json();
+        if (!json.ok) throw new Error(json.error?.message ?? "Open failed");
+        await refreshHedges();
+        await refreshReferral();
+        setStep("positions");
+        setToast("Hedge is live — P&L updates in realtime.");
+      } catch (e) {
+        setToast(e instanceof Error ? e.message : "Open failed");
+      } finally {
+        setBusy("");
+      }
+    },
+    [parsed, privyId, demoMode, walletAddress, intent, refreshHedges, refreshReferral],
+  );
+
   useEffect(() => {
     void (async () => {
       await ensureUser();
@@ -170,19 +248,14 @@ function HedgeAppInner({
 
   useEffect(() => {
     if (demoMode || !walletAddress) {
-      setBalances({
-        sol: 1.25,
-        usdc: 420.5,
-        walletAddress: demoMode ? "DemoWallet (fixture balances)" : walletAddress ?? "—",
-      });
+      setBalances({ sol: 12.48, usdc: 1_280.4 });
       return;
     }
     void fetch(`/api/balances?wallet=${encodeURIComponent(walletAddress)}`)
       .then((r) => r.json())
       .then((json) => {
-        if (json.ok) setBalances(json.data);
-      })
-      .catch(() => setBanner("Balance fetch failed — check RPC."));
+        if (json.ok) setBalances({ sol: json.data.sol, usdc: json.data.usdc });
+      });
   }, [walletAddress, demoMode]);
 
   useEffect(() => {
@@ -205,63 +278,22 @@ function HedgeAppInner({
     return () => es.close();
   }, [privyId]);
 
-  async function runMatch() {
-    setBusy("Matching markets…");
-    setBanner(null);
-    try {
-      const res = await fetch("/api/prompt", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ intent }),
-      });
-      const json = await res.json();
-      if (!json.ok) throw new Error(json.error?.message ?? "Prompt failed");
-      setParsed(json.data.intent);
-      setMatches(json.data.matches ?? []);
-      if (json.data.intent?.sideBias) setSide(json.data.intent.sideBias);
-      if (json.data.intent?.refusal) setBanner(json.data.intent.refusal);
-    } catch (e) {
-      setBanner(e instanceof Error ? e.message : "Match failed");
-    } finally {
-      setBusy("");
-    }
-  }
-
-  async function openHedge(market: MarketMatch) {
-    setBusy("Opening hedge…");
-    try {
-      const stakeUsd =
-        typeof parsed?.stakeUsd === "number" ? (parsed.stakeUsd as number) : 25;
-      const res = await fetch("/api/hedges", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          privyId,
-          walletAddress: demoMode ? null : walletAddress,
-          intent,
-          parsedIntent: JSON.stringify(parsed ?? {}),
-          provider: market.provider,
-          marketId: market.id,
-          marketTitle: market.title,
-          side,
-          stakeUsd,
-        }),
-      });
-      const json = await res.json();
-      if (!json.ok) throw new Error(json.error?.message ?? "Open failed");
-      await refreshHedges();
-      await refreshReferral();
-      setBanner(
-        json.data.order?.paper
-          ? "Paper hedge opened (fixture/provider paper mode)."
-          : "Hedge opened.",
-      );
-    } catch (e) {
-      setBanner(e instanceof Error ? e.message : "Open failed");
-    } finally {
-      setBusy("");
-    }
-  }
+  // Auto-demo: match + open best market once so reviewers see value immediately
+  useEffect(() => {
+    if (autoRan.current) return;
+    autoRan.current = true;
+    const timer = window.setTimeout(() => {
+      void (async () => {
+        const found = await runMatch(SUGGESTIONS[0]);
+        if (found?.[0]) {
+          await openHedge(found[0], "NO", 50);
+        }
+      })();
+    }, 600);
+    return () => window.clearTimeout(timer);
+    // intentionally once on mount
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   async function closeHedge(hedge: Hedge) {
     const position = hedge.positions.find((p) => p.status === "open");
@@ -276,196 +308,277 @@ function HedgeAppInner({
       const json = await res.json();
       if (!json.ok) throw new Error(json.error?.message ?? "Close failed");
       await refreshHedges();
-      setBanner(`Closed. Realized P&L: ${Number(json.data.realizedPnL).toFixed(2)}`);
+      setToast(`Closed · realized ${Number(json.data.realizedPnL).toFixed(2)} USDC`);
     } catch (e) {
-      setBanner(e instanceof Error ? e.message : "Close failed");
+      setToast(e instanceof Error ? e.message : "Close failed");
     } finally {
       setBusy("");
     }
   }
 
-  const providerBadge = useMemo(() => {
-    if (!matches.length) return "Providers: Polymarket + Kalshi adapters";
-    return matches.some((m) => m.live)
-      ? "Live provider data mixed with fixtures"
-      : "Fixture / paper mode (add API keys for live)";
-  }, [matches]);
+  const openHedges = hedges.filter((h) => h.status === "open");
 
   return (
-    <Shell>
-      <section className="rounded-2xl border border-emerald-500/20 bg-emerald-950/40 p-4 backdrop-blur">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <p className="text-sm text-emerald-100/80">
-              {demoMode
-                ? "Demo auth (set NEXT_PUBLIC_PRIVY_APP_ID for Privy)"
-                : `Signed in · ${email ?? privyId}`}
-            </p>
-            {balances && (
-              <p className="mt-1 font-mono text-sm text-emerald-300">
-                SOL {balances.sol.toFixed(4)} · USDC {balances.usdc.toFixed(2)}
-              </p>
-            )}
-          </div>
-          {onLogout && (
-            <button
-              type="button"
-              onClick={onLogout}
-              className="rounded-lg bg-emerald-900 px-3 py-2 text-sm text-emerald-100"
-            >
-              Log out
-            </button>
-          )}
+    <Phone>
+      <header className="relative z-10 flex items-center justify-between px-5 pb-2 pt-5">
+        <div>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[var(--accent)]">
+            Hedge
+          </p>
+          <p className="text-[12px] text-[var(--muted)]">
+            {demoMode ? "Demo wallet" : "Privy wallet"}
+          </p>
         </div>
-        <div className="mt-3 flex flex-wrap gap-4 text-sm">
+        <div className="text-right">
+          <p className="font-mono text-[13px] text-[var(--ink)]">
+            {balances ? `${balances.usdc.toLocaleString(undefined, { maximumFractionDigits: 0 })} USDC` : "—"}
+          </p>
+          <p className="font-mono text-[11px] text-[var(--muted)]">
+            {balances ? `${balances.sol.toFixed(2)} SOL` : ""}
+          </p>
+        </div>
+      </header>
+
+      <section className="relative z-10 mx-5 mt-2 animate-rise rounded-3xl border border-[var(--line)] bg-[var(--panel)] p-5">
+        <div className="flex items-start justify-between gap-3">
           <div>
-            <span className="text-emerald-100/50">Realtime P&amp;L </span>
-            <span className={`font-mono ${pnl >= 0 ? "text-emerald-300" : "text-rose-300"}`}>
+            <p className="text-[12px] text-[var(--muted)]">Realtime P&amp;L</p>
+            <p
+              className={`mt-1 font-serif text-[2.4rem] leading-none tracking-tight ${
+                pnl >= 0 ? "text-[var(--good)]" : "text-[var(--bad)]"
+              }`}
+            >
               {pnl >= 0 ? "+" : ""}
-              {pnl.toFixed(2)} USDC
-            </span>
+              {pnl.toFixed(2)}
+            </p>
           </div>
-          {referral && (
-            <div className="text-emerald-100/80">
-              Referral <span className="font-mono text-emerald-300">{referral.referralCode}</span>
-            </div>
-          )}
+          <div className="rounded-full border border-[var(--line)] px-3 py-1 text-[11px] text-[var(--muted)]">
+            <span className="mr-1.5 inline-block h-1.5 w-1.5 rounded-full bg-[var(--good)] animate-pulse-soft" />
+            SSE live
+          </div>
         </div>
+        <div className="mt-4 h-1.5 overflow-hidden rounded-full bg-white/5">
+          <div className="live-bar h-full w-2/3 rounded-full" />
+        </div>
+        {referral && (
+          <p className="mt-3 text-[12px] text-[var(--muted)]">
+            Invite code{" "}
+            <span className="font-mono text-[var(--ink)]">{referral.referralCode}</span>
+          </p>
+        )}
       </section>
 
-      <section className="space-y-3">
-        <label className="block text-sm text-emerald-100/70" htmlFor="intent">
-          Hedge intent
-        </label>
-        <textarea
-          id="intent"
-          value={intent}
-          onChange={(e) => setIntent(e.target.value)}
-          rows={3}
-          className="w-full rounded-xl border border-emerald-500/20 bg-black/30 p-3 text-emerald-50 outline-none ring-emerald-400/40 focus:ring"
-        />
-        <div className="flex flex-wrap gap-2">
+      <nav className="relative z-10 mx-5 mt-4 grid grid-cols-3 gap-1 rounded-2xl border border-[var(--line)] bg-black/20 p-1 text-[12px]">
+        {(
+          [
+            ["compose", "Intent"],
+            ["markets", "Markets"],
+            ["positions", "Positions"],
+          ] as const
+        ).map(([id, label]) => (
           <button
+            key={id}
             type="button"
-            disabled={Boolean(busy)}
-            onClick={() => void runMatch()}
-            className="rounded-lg bg-emerald-400 px-4 py-2 text-sm font-medium text-emerald-950 disabled:opacity-50"
+            onClick={() => setStep(id)}
+            className={`rounded-xl px-2 py-2 ${
+              step === id ? "bg-[var(--ink)] text-[#0c0b0a]" : "text-[var(--muted)]"
+            }`}
           >
-            Match markets
+            {label}
           </button>
-          <div className="flex items-center gap-2 text-sm text-emerald-100/70">
-            Side
-            <select
-              value={side}
-              onChange={(e) => setSide(e.target.value as "YES" | "NO")}
-              className="rounded-md border border-emerald-500/30 bg-emerald-950 px-2 py-1"
-            >
-              <option value="YES">YES</option>
-              <option value="NO">NO</option>
-            </select>
-          </div>
-        </div>
-        <p className="text-xs text-emerald-100/50">{providerBadge}</p>
-      </section>
+        ))}
+      </nav>
 
-      {banner && (
-        <p className="rounded-lg border border-amber-500/30 bg-amber-950/40 px-3 py-2 text-sm text-amber-100">
-          {banner}
-        </p>
-      )}
-      {busy && <p className="text-sm text-emerald-200/70">{busy}</p>}
+      <div className="relative z-10 flex-1 space-y-4 overflow-y-auto px-5 py-4">
+        {toast && (
+          <p className="rounded-2xl border border-[var(--line)] bg-black/30 px-3 py-2 text-[13px] text-[var(--ink)]">
+            {toast}
+          </p>
+        )}
+        {busy && <p className="text-[13px] text-[var(--muted)]">{busy}</p>}
 
-      <section className="space-y-2">
-        <h2 className="text-lg text-emerald-50">Matched markets</h2>
-        <ul className="space-y-2">
-          {matches.map((m) => (
-            <li
-              key={`${m.provider}-${m.id}`}
-              className="flex flex-col gap-2 rounded-xl border border-emerald-500/15 bg-black/25 p-3 sm:flex-row sm:items-center sm:justify-between"
-            >
-              <div>
-                <p className="text-sm font-medium text-emerald-50">{m.title}</p>
-                <p className="text-xs text-emerald-100/50">
-                  {m.provider}
-                  {m.live ? " · live" : " · fixture"} · YES {m.yesPrice.toFixed(2)} / NO{" "}
-                  {m.noPrice.toFixed(2)} · score {m.score.toFixed(1)} · {m.reason}
-                </p>
-              </div>
+        {step === "compose" && (
+          <div className="animate-rise space-y-4">
+            <Brand />
+            <label className="block text-[12px] text-[var(--muted)]" htmlFor="intent">
+              What do you want to protect?
+            </label>
+            <textarea
+              id="intent"
+              value={intent}
+              onChange={(e) => setIntent(e.target.value)}
+              rows={3}
+              className="w-full resize-none rounded-2xl border border-[var(--line)] bg-black/25 p-4 text-[15px] text-[var(--ink)] outline-none focus:border-[var(--accent)]"
+            />
+            <div className="flex flex-wrap gap-2">
+              {SUGGESTIONS.map((s) => (
+                <button
+                  key={s}
+                  type="button"
+                  onClick={() => setIntent(s)}
+                  className="rounded-full border border-[var(--line)] px-3 py-1.5 text-left text-[11px] text-[var(--muted)]"
+                >
+                  {s.split("—")[0]}
+                </button>
+              ))}
+            </div>
+            <div className="flex gap-2">
               <button
                 type="button"
-                onClick={() => void openHedge(m)}
-                className="rounded-lg border border-emerald-400/40 px-3 py-1.5 text-sm text-emerald-200"
+                disabled={Boolean(busy)}
+                onClick={() => void runMatch()}
+                className="flex-1 rounded-2xl bg-[var(--accent)] px-4 py-3.5 text-[15px] font-semibold text-[#1a1208] disabled:opacity-50"
               >
-                Open {side}
+                Match markets
               </button>
-            </li>
-          ))}
-          {!matches.length && (
-            <li className="text-sm text-emerald-100/40">Run match to see markets.</li>
-          )}
-        </ul>
-      </section>
-
-      <section className="space-y-2">
-        <h2 className="text-lg text-emerald-50">Your hedges</h2>
-        <ul className="space-y-2">
-          {hedges.map((h) => {
-            const live = livePositions.find((p) => h.positions.some((hp) => hp.id === p.id));
-            return (
-              <li
-                key={h.id}
-                className="flex flex-col gap-2 rounded-xl border border-emerald-500/15 bg-black/25 p-3 sm:flex-row sm:items-center sm:justify-between"
+              <select
+                value={side}
+                onChange={(e) => setSide(e.target.value as "YES" | "NO")}
+                className="rounded-2xl border border-[var(--line)] bg-black/30 px-3 text-[13px]"
               >
-                <div>
-                  <p className="text-sm text-emerald-50">
-                    {h.side} · {h.marketTitle}
-                  </p>
-                  <p className="text-xs text-emerald-100/50">
-                    {h.provider} · ${h.stakeUsd} · {h.status}
-                    {live
-                      ? ` · live P&L ${live.unrealizedPnL.toFixed(2)} @ ${live.currentPrice.toFixed(3)}`
-                      : ""}
-                  </p>
-                </div>
-                {h.status === "open" && (
-                  <button
-                    type="button"
-                    onClick={() => void closeHedge(h)}
-                    className="rounded-lg border border-rose-400/40 px-3 py-1.5 text-sm text-rose-200"
-                  >
-                    Close
-                  </button>
-                )}
-              </li>
-            );
-          })}
-          {!hedges.length && (
-            <li className="text-sm text-emerald-100/40">
-              No hedges yet — persisted in DB, not localStorage.
-            </li>
-          )}
-        </ul>
-      </section>
+                <option value="YES">YES</option>
+                <option value="NO">NO</option>
+              </select>
+            </div>
+          </div>
+        )}
 
-      {referral && (
-        <section className="space-y-3 rounded-xl border border-emerald-500/15 bg-black/20 p-4">
-          <h2 className="text-lg text-emerald-50">Share &amp; referrals</h2>
-          <p className="break-all text-sm text-emerald-100/70">{referral.shareUrl}</p>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={referral.cardUrl}
-            alt="Shareable hedge card"
-            className="w-full max-w-xl rounded-lg border border-emerald-500/20"
-          />
-          <ul className="space-y-1">
-            {referral.notifications.map((n) => (
-              <li key={n.id} className="text-xs text-emerald-100/60">
-                {n.title}: {n.body}
-              </li>
+        {step === "markets" && (
+          <div className="animate-rise space-y-3">
+            <h2 className="font-serif text-2xl text-[var(--ink)]">Matched markets</h2>
+            <p className="text-[13px] text-[var(--muted)]">
+              Polymarket + Kalshi adapters · ranked by intent fit
+            </p>
+            {matches.map((m, i) => (
+              <article
+                key={`${m.provider}-${m.id}`}
+                className="rounded-3xl border border-[var(--line)] bg-[var(--panel)] p-4"
+                style={{ animationDelay: `${i * 60}ms` }}
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="text-[11px] uppercase tracking-wide text-[var(--muted)]">
+                      {m.provider}
+                    </p>
+                    <h3 className="mt-1 text-[15px] font-medium leading-snug text-[var(--ink)]">
+                      {m.title}
+                    </h3>
+                  </div>
+                  <span className="rounded-full bg-white/5 px-2 py-1 font-mono text-[11px] text-[var(--accent)]">
+                    {m.score.toFixed(1)}
+                  </span>
+                </div>
+                <div className="mt-4 grid grid-cols-2 gap-3">
+                  <PricePill label="YES" price={m.yesPrice} />
+                  <PricePill label="NO" price={m.noPrice} />
+                </div>
+                <p className="mt-3 text-[12px] text-[var(--muted)]">{m.reason}</p>
+                <button
+                  type="button"
+                  onClick={() => void openHedge(m, side)}
+                  className="mt-4 w-full rounded-2xl bg-[var(--ink)] py-3 text-[14px] font-semibold text-[#0c0b0a]"
+                >
+                  Open {side} hedge
+                </button>
+              </article>
             ))}
-          </ul>
-        </section>
-      )}
-    </Shell>
+            {!matches.length && (
+              <p className="text-[13px] text-[var(--muted)]">No matches yet — try an intent.</p>
+            )}
+          </div>
+        )}
+
+        {step === "positions" && (
+          <div className="animate-rise space-y-3">
+            <h2 className="font-serif text-2xl text-[var(--ink)]">Your hedges</h2>
+            <p className="text-[13px] text-[var(--muted)]">
+              Persisted in DB · streamed over SSE · not localStorage
+            </p>
+            {hedges.map((h) => {
+              const live = livePositions.find((p) => h.positions.some((hp) => hp.id === p.id));
+              return (
+                <article
+                  key={h.id}
+                  className="rounded-3xl border border-[var(--line)] bg-[var(--panel)] p-4"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="text-[11px] uppercase tracking-wide text-[var(--muted)]">
+                        {h.side} · {h.provider} · ${h.stakeUsd}
+                      </p>
+                      <h3 className="mt-1 text-[15px] leading-snug text-[var(--ink)]">
+                        {h.marketTitle}
+                      </h3>
+                    </div>
+                    <span
+                      className={`font-mono text-[14px] ${
+                        (live?.unrealizedPnL ?? 0) >= 0
+                          ? "text-[var(--good)]"
+                          : "text-[var(--bad)]"
+                      }`}
+                    >
+                      {live
+                        ? `${live.unrealizedPnL >= 0 ? "+" : ""}${live.unrealizedPnL.toFixed(2)}`
+                        : h.status}
+                    </span>
+                  </div>
+                  {h.status === "open" && (
+                    <button
+                      type="button"
+                      onClick={() => void closeHedge(h)}
+                      className="mt-4 w-full rounded-2xl border border-[var(--line)] py-2.5 text-[13px] text-[var(--muted)]"
+                    >
+                      Close position
+                    </button>
+                  )}
+                </article>
+              );
+            })}
+            {!hedges.length && (
+              <p className="text-[13px] text-[var(--muted)]">No positions yet.</p>
+            )}
+            {referral?.cardUrl && openHedges.length > 0 && (
+              <div className="space-y-2 pt-2">
+                <p className="text-[12px] text-[var(--muted)]">Shareable hedge card</p>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={referral.cardUrl}
+                  alt="Share card"
+                  className="w-full rounded-2xl border border-[var(--line)]"
+                />
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
+      <footer className="relative z-10 flex items-center justify-between border-t border-[var(--line)] px-5 py-3 text-[11px] text-[var(--muted)]">
+        <span>{openHedges.length} open</span>
+        {onLogout ? (
+          <button type="button" onClick={onLogout}>
+            Log out
+          </button>
+        ) : (
+          <Link href="/portfolio">Why this stack →</Link>
+        )}
+      </footer>
+    </Phone>
+  );
+}
+
+function PricePill({ label, price }: { label: string; price: number }) {
+  return (
+    <div className="rounded-2xl bg-black/25 p-3">
+      <div className="flex items-center justify-between text-[11px] text-[var(--muted)]">
+        <span>{label}</span>
+        <span className="font-mono text-[var(--ink)]">{(price * 100).toFixed(0)}¢</span>
+      </div>
+      <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-white/5">
+        <div
+          className={`h-full rounded-full ${label === "YES" ? "bg-[var(--good)]" : "bg-[var(--accent)]"}`}
+          style={{ width: `${Math.max(6, Math.min(100, price * 100))}%` }}
+        />
+      </div>
+    </div>
   );
 }

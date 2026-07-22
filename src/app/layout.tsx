@@ -1,33 +1,34 @@
 import type { Metadata, Viewport } from "next";
-import { Fraunces, DM_Sans } from "next/font/google";
+import { Instrument_Serif, Manrope } from "next/font/google";
 import { Providers } from "@/components/Providers";
 import { ServiceWorkerRegister } from "@/components/ServiceWorkerRegister";
 import "./globals.css";
 
-const display = Fraunces({
+const display = Instrument_Serif({
   variable: "--font-display",
   subsets: ["latin"],
+  weight: "400",
 });
 
-const sans = DM_Sans({
+const sans = Manrope({
   variable: "--font-sans",
   subsets: ["latin"],
 });
 
 export const metadata: Metadata = {
-  title: "Hedge Your Fun — Production MVP Spike",
+  title: "Hedge — protect plans with prediction markets",
   description:
-    "Independent technical spike for Superteam: Privy, Solana, Polymarket/Kalshi, SSE P&L, PWA.",
+    "Mobile-first Solana hedge demo: intent → market match → open position → realtime P&L.",
   manifest: "/manifest.webmanifest",
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
-    title: "HYF Spike",
+    title: "Hedge",
   },
 };
 
 export const viewport: Viewport = {
-  themeColor: "#0B1F1A",
+  themeColor: "#0c0b0a",
   width: "device-width",
   initialScale: 1,
   maximumScale: 1,
@@ -40,7 +41,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={`${display.variable} ${sans.variable} h-full`}>
-      <body className="min-h-full font-sans text-emerald-50 antialiased">
+      <body className="min-h-full font-sans antialiased">
         <Providers>
           <ServiceWorkerRegister />
           {children}
