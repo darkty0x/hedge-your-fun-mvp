@@ -16,7 +16,7 @@ Your listing is about taking a functional prototype to production: live Kalshi/P
 
 To make evaluation concrete (without pretending this is unpaid delivery of your product), I built a **timeboxed technical spike** mapped 1:1 to your checklist:
 
-- **Demo:** https://hyf-spike-production.up.railway.app
+- **Demo:** https://hyf-spike-production-7404.up.railway.app
 - **Repo:** https://github.com/darkty0x/hedge-your-fun-mvp
 - **Architecture map:** `docs/SPIKE.md`
 
@@ -47,7 +47,7 @@ Thanks,
 ## Portfolio blurb
 
 1. **AskTheHive (Hive Labs)** — https://askthehive.ai — founding engineer; Solana consumer DeFi; hackathon + $60K grant; production TVL growth.  
-2. **Hedge Your Fun production MVP spike** — https://hyf-spike-production.up.railway.app — Superteam application spike covering live provider adapters, Privy/Solana, SSE P&L, prompt pipeline, referrals, PWA.
+2. **Hedge Your Fun production MVP spike** — https://hyf-spike-production-7404.up.railway.app — Superteam application spike covering live provider adapters, Privy/Solana, SSE P&L, prompt pipeline, referrals, PWA.
 
 ---
 
@@ -58,7 +58,7 @@ Hey — just applied to the Full Stack Solana Developer (Production MVP) listing
 
 I’m founding engineer at AskTheHive (hackathon + $60K grant → production Solana TVL). Built a timeboxed spike mapped to your checklist (not claiming to be your prod app):
 
-Demo: https://hyf-spike-production.up.railway.app
+Demo: https://hyf-spike-production-7404.up.railway.app
 Repo: https://github.com/darkty0x/hedge-your-fun-mvp
 Map: docs/SPIKE.md
 

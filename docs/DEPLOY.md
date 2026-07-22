@@ -1,8 +1,10 @@
 # Deploy & apply
 
-Live demo (Railway): **https://hyf-spike-production.up.railway.app**
+Live demo (Railway · **Daisuke Hiroki** personal/Hobby): **https://hyf-spike-production-7404.up.railway.app**
 
-Project: https://railway.com/project/9c973d3f-afc0-4ef8-992b-1d8e57098d0e
+Project: https://railway.com/project/61d04b65-5315-49c1-8f30-95b19a84b2fd
+
+GitHub: https://github.com/darkty0x/hedge-your-fun-mvp
 
 ## Redeploy
 
