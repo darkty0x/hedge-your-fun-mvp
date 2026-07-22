@@ -5,7 +5,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends python3 make g+
 COPY package.json package-lock.json ./
 COPY prisma ./prisma
 COPY prisma.config.ts ./
-RUN npm install
+RUN npm install --legacy-peer-deps
 
 FROM node:22-bookworm-slim AS builder
 WORKDIR /app
