@@ -17,7 +17,7 @@ Your listing is about taking a functional prototype to production: live Kalshi/P
 To make evaluation concrete (without pretending this is unpaid delivery of your product), I built a **timeboxed technical spike** mapped 1:1 to your checklist:
 
 - **Demo:** https://hyf-spike-production.up.railway.app
-- **Repo:** `[GITHUB_URL]` (push `main` when ready)
+- **Repo:** https://github.com/darkty0x/hedge-your-fun-mvp
 - **Architecture map:** `docs/SPIKE.md`
 
 It includes Privy-ready wallet UX (demo mode without keys), Solana balance reads, Polymarket + Kalshi provider adapters, Prisma-backed hedges/P&L/notifications/referrals, SSE P&L, intent→market matching with edge-case refusals, rate limits / retries / dual-key rotation, shareable hedge cards, and a PWA shell.
@@ -59,7 +59,7 @@ Hey — just applied to the Full Stack Solana Developer (Production MVP) listing
 I’m founding engineer at AskTheHive (hackathon + $60K grant → production Solana TVL). Built a timeboxed spike mapped to your checklist (not claiming to be your prod app):
 
 Demo: https://hyf-spike-production.up.railway.app
-Repo: [GITHUB_URL]
+Repo: https://github.com/darkty0x/hedge-your-fun-mvp
 Map: docs/SPIKE.md
 
 Happy to do a 15-min walkthrough of Privy/Solana balances → intent match → open/close hedge → SSE P&L → referral card.

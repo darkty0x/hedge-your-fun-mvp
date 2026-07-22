@@ -12,7 +12,7 @@ railway up -d -c -s hyf-spike
 
 ## Apply
 
-1. Put GitHub URL into `docs/APPLICATION.md` (demo URL already filled)
+1. Confirm name/contact in `docs/APPLICATION.md` (demo + GitHub URLs already filled)
 2. Submit on https://superteam.fun/earn/listing/full-stack-solana-developer-for-production-mvp
 3. Message https://t.me/martabytes with the Telegram script in `docs/APPLICATION.md`
 
