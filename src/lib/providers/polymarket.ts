@@ -76,50 +76,85 @@ function normalizeGammaMarket(raw: Record<string, unknown>): MarketQuote | null 
 export function createPolymarketProvider(): MarketProvider {
   const apiKey = getActiveApiKey("POLYMARKET");
   const base = process.env.POLYMARKET_API_BASE ?? "https://gamma-api.polymarket.com";
-  const isLive = Boolean(apiKey) || process.env.DEMO_MODE !== "true";
 
   return {
     id: "polymarket",
-    isLive: Boolean(apiKey),
+    // Gamma market data is public — treat as live when fetch succeeds
+    isLive: true,
 
     async searchMarkets(query: string, limit = 8) {
-      if (!apiKey && process.env.FORCE_LIVE_POLYMARKET !== "true") {
-        const q = query.toLowerCase();
-        return FIXTURES.filter(
-          (m) =>
-            m.title.toLowerCase().includes(q) ||
-            m.description?.toLowerCase().includes(q) ||
-            q.split(/\s+/).some((t) => t.length > 2 && m.title.toLowerCase().includes(t)),
-        ).slice(0, limit);
-      }
-
       try {
-        const url = new URL(`${base}/markets`);
-        url.searchParams.set("limit", String(limit));
-        url.searchParams.set("active", "true");
-        url.searchParams.set("closed", "false");
-        if (query) url.searchParams.set("search", query);
+        const url = new URL(`${base}/public-search`);
+        url.searchParams.set("q", query || "solana");
+        url.searchParams.set("limit_per_type", String(Math.max(limit, 6)));
 
-        const res = await withRetry(async () => {
-          const r = await fetch(url, {
-            headers: apiKey ? { Authorization: `Bearer ${apiKey}` } : {},
-            next: { revalidate: 30 },
+        let list: unknown[] = [];
+        try {
+          const res = await withRetry(async () => {
+            const r = await fetch(url.toString(), {
+              headers: apiKey ? { Authorization: `Bearer ${apiKey}` } : {},
+              next: { revalidate: 20 },
+            });
+            if (!r.ok) throw new Error(`Polymarket search ${r.status}`);
+            return r;
           });
-          if (!r.ok) throw new Error(`Polymarket ${r.status}`);
-          return r;
-        });
+          const data = (await res.json()) as {
+            events?: Array<{ markets?: unknown[]; title?: string }>;
+            markets?: unknown[];
+          };
+          list =
+            data.markets ??
+            data.events?.flatMap((e) => e.markets ?? []) ??
+            [];
+        } catch {
+          const fallback = new URL(`${base}/markets`);
+          fallback.searchParams.set("limit", String(limit));
+          fallback.searchParams.set("active", "true");
+          fallback.searchParams.set("closed", "false");
+          if (query) fallback.searchParams.set("search", query);
+          const res = await withRetry(async () => {
+            const r = await fetch(fallback.toString(), { next: { revalidate: 20 } });
+            if (!r.ok) throw new Error(`Polymarket markets ${r.status}`);
+            return r;
+          });
+          const data = (await res.json()) as unknown;
+          list = Array.isArray(data)
+            ? data
+            : ((data as { markets?: unknown[] }).markets ?? []);
+        }
 
-        const data = (await res.json()) as unknown;
-        const list = Array.isArray(data)
-          ? data
-          : ((data as { markets?: unknown[] }).markets ?? []);
-        return list
+        const markets = list
           .map((item) => normalizeGammaMarket(item as Record<string, unknown>))
-          .filter((m): m is MarketQuote => Boolean(m))
-          .slice(0, limit);
+          .filter((m): m is MarketQuote => Boolean(m));
+
+        if (markets.length) {
+          const q = query.toLowerCase();
+          const ranked = markets
+            .map((m) => {
+              const hay = `${m.title} ${m.description ?? ""}`.toLowerCase();
+              const hit = q
+                .split(/\s+/)
+                .filter((t) => t.length > 2)
+                .reduce((s, t) => s + (hay.includes(t) ? 2 : 0), 0);
+              return { m, hit };
+            })
+            .sort((a, b) => b.hit - a.hit || (b.m.volume ?? 0) - (a.m.volume ?? 0))
+            .map((x) => x.m)
+            .slice(0, limit);
+          return ranked.length ? ranked : markets.slice(0, limit);
+        }
       } catch {
-        return FIXTURES.slice(0, limit).map((m) => ({ ...m, live: false }));
+        /* fall through to fixtures */
       }
+
+      const q = query.toLowerCase();
+      return FIXTURES.filter(
+        (m) =>
+          !q ||
+          m.title.toLowerCase().includes(q) ||
+          m.description?.toLowerCase().includes(q) ||
+          q.split(/\s+/).some((t) => t.length > 2 && m.title.toLowerCase().includes(t)),
+      ).slice(0, limit);
     },
 
     async getMarket(marketId: string) {

@@ -1,15 +1,16 @@
 @import "tailwindcss";
 
 :root {
-  --ink: #f6f1e8;
-  --muted: #9a958c;
-  --line: rgba(246, 241, 232, 0.12);
-  --panel: rgba(18, 16, 14, 0.72);
-  --good: #7dffb3;
-  --bad: #ff8f8f;
-  --accent: #ffb347;
-  --bg0: #0c0b0a;
-  --bg1: #161310;
+  --bg: #07080a;
+  --bg-elev: #0e1116;
+  --panel: rgba(18, 22, 30, 0.82);
+  --ink: #f4f7fb;
+  --muted: #8b95a7;
+  --line: rgba(244, 247, 251, 0.1);
+  --lime: #c8f54a;
+  --mint: #5dffb1;
+  --coral: #ff7a7a;
+  --violet-glow: transparent;
 }
 
 @theme inline {
@@ -19,18 +20,14 @@
   --font-serif: var(--font-display);
 }
 
-* {
-  box-sizing: border-box;
-}
-
 body {
   margin: 0;
   min-height: 100vh;
   color: var(--ink);
   background:
-    radial-gradient(900px 500px at 80% -10%, rgba(255, 179, 71, 0.18), transparent 55%),
-    radial-gradient(700px 420px at 0% 30%, rgba(125, 255, 179, 0.08), transparent 50%),
-    linear-gradient(165deg, #120f0c 0%, #0c0b0a 45%, #15110e 100%);
+    radial-gradient(900px 520px at 85% -5%, rgba(200, 245, 74, 0.16), transparent 55%),
+    radial-gradient(700px 480px at -10% 40%, rgba(93, 255, 177, 0.08), transparent 50%),
+    linear-gradient(180deg, #090b10 0%, #07080a 50%, #0a0d12 100%);
   font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
 }
 
@@ -38,46 +35,40 @@ body {
   font-family: var(--font-display), ui-serif, Georgia, serif;
 }
 
-@keyframes rise {
-  from {
-    opacity: 0;
-    transform: translateY(12px);
-  }
-  to {
-    opacity: 1;
+@keyframes floaty {
+  0%,
+  100% {
     transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-6px);
   }
 }
 
-@keyframes pulse-soft {
+@keyframes glow {
   0%,
   100% {
-    opacity: 0.55;
+    opacity: 0.45;
   }
   50% {
     opacity: 1;
   }
 }
 
-@keyframes shimmer {
-  0% {
-    background-position: 0% 50%;
-  }
-  100% {
-    background-position: 100% 50%;
-  }
+.animate-floaty {
+  animation: floaty 4.5s ease-in-out infinite;
 }
 
-.animate-rise {
-  animation: rise 0.55s ease-out both;
+.animate-glow {
+  animation: glow 2s ease-in-out infinite;
 }
 
-.animate-pulse-soft {
-  animation: pulse-soft 2.2s ease-in-out infinite;
+.glass {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  backdrop-filter: blur(18px);
 }
 
-.live-bar {
-  background: linear-gradient(90deg, #ffb347, #7dffb3, #ffb347);
-  background-size: 200% 100%;
-  animation: shimmer 2.8s linear infinite;
+.noise {
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.05'/%3E%3C/svg%3E");
 }
